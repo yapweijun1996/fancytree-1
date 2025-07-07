@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP Document Tracking - Improved Version</title>
+    
+    <!-- Fancytree CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery.fancytree@2.38.3/dist/skin-win8/ui.fancytree.min.css">
+    
+    <style>
+        /* CSS Variables for consistent theming */
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #28a745;
+            --warning-color: #fd7e14;
+            --danger-color: #e74c3c;
+            --info-color: #17a2b8;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 15px rgba(0,0,0,0.1);
+            --border-radius: 8px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--light-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2rem;
+        }
+        
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        
+        .content {
+            display: flex;
+            min-height: 700px;
+        }
+        
+        .sidebar {
+            width: 400px;
+            border-right: 1px solid var(--border-color);
+            background: var(--light-color);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        #tree {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        
+        /* Enhanced search box */
+        .search-box {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            background: white;
+        }
+        
+        .search-input-wrapper {
+            position: relative;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 40px 12px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .search-clear {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+            font-size: 16px;
+            display: none;
+        }
+        
+        .search-clear:hover {
+            color: var(--danger-color);
+        }
+        
+        /* Enhanced toolbar */
+        .toolbar {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            background: #f8f9fa;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary {
+            background: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        /* Filter section */
+        .filter-section {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            background: white;
+        }
+        
+        .filter-section h4 {
+            margin: 0 0 10px 0;
+            color: var(--dark-color);
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .filter-btn {
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            background: #f8f9fa;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: var(--transition);
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        
+        .filter-btn:hover {
+            background: #e9ecef;
+        }
+        
+        .filter-btn.active {
+            background: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+        
+        /* Document status colors */
+        .doc-draft .fancytree-title { 
+            color: #6c757d; 
+            font-style: italic; 
+        }
+        
+        .doc-review .fancytree-title { 
+            color: var(--warning-color); 
+            font-weight: 500; 
+        }
+        
+        .doc-approved .fancytree-title { 
+            color: var(--success-color); 
+            font-weight: 600; 
+        }
+        
+        .doc-urgent .fancytree-title { 
+            color: var(--danger-color); 
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        
+        .doc-rejected .fancytree-title {
+            color: var(--danger-color);
+            text-decoration: line-through;
+        }
+        
+        .doc-archived .fancytree-title {
+            color: #6c757d;
+            opacity: 0.7;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* Enhanced document details */
+        .document-details {
+            background: var(--light-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .doc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .doc-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+        
+        .status-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-draft { background: #6c757d; color: white; }
+        .status-review { background: var(--warning-color); color: white; }
+        .status-approved { background: var(--success-color); color: white; }
+        .status-rejected { background: var(--danger-color); color: white; }
+        .status-urgent { 
+            background: var(--danger-color); 
+            color: white; 
+            animation: pulse 2s infinite;
+        }
+        .status-archived { background: #e9ecef; color: #6c757d; }
+        
+        .doc-metadata {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .metadata-item {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid var(--secondary-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .metadata-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+        }
+        
+        .metadata-value {
+            font-weight: 500;
+            color: var(--primary-color);
+            font-size: 14px;
+        }
+        
+        /* Action buttons */
+        .document-actions {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid var(--success-color);
+        }
+        
+        .document-actions h4 {
+            margin: 0 0 15px 0;
+            color: var(--primary-color);
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .btn-action {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-download { background: var(--info-color); color: white; }
+        .btn-edit { background: var(--warning-color); color: white; }
+        .btn-approve { background: var(--success-color); color: white; }
+        .btn-priority { background: var(--danger-color); color: white; }
+        
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        /* Status bar */
+        .status-bar {
+            background: var(--dark-color);
+            color: white;
+            padding: 12px 20px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-info {
+            display: flex;
+            gap: 20px;
+        }
+        
+        /* Error notifications */
+        .error-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--danger-color);
+            color: white;
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            max-width: 400px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .success-notification {
+            background: var(--success-color);
+        }
+        
+        .warning-notification {
+            background: var(--warning-color);
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .error-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .error-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            margin-left: auto;
+        }
+        
+        /* Loading states */
+        .loading {
+            color: var(--secondary-color);
+            font-style: italic;
+        }
+        
+        .loading::after {
+            content: '';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .content {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            #tree {
+                height: 300px;
+            }
+            
+            .doc-metadata {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn-action {
+                justify-content: center;
+            }
+        }
+        
+        /* Accessibility improvements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        /* Focus styles */
+        .btn:focus,
+        .filter-btn:focus,
+        input:focus {
+            outline: 2px solid var(--secondary-color);
+            outline-offset: 2px;
+        }
+        
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            :root {
+                --border-color: #000;
+                --shadow: 0 4px 15px rgba(0,0,0,0.3);
+            }
+        }
+        
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Document Tracking System</h1>
+            <p>Enterprise Document Management & Workflow Control - Enhanced Version</p>
+        </div>
+        
+        <div class="content">
+            <div class="sidebar">
+                <div class="search-box">
+                    <div class="search-input-wrapper">
+                        <input type="text" id="searchInput" placeholder="Search documents, authors, departments..." 
+                               aria-label="Search documents">
+                        <button class="search-clear" id="searchClear" aria-label="Clear search">×</button>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <h4>Filter by Status</h4>
+                    <div class="filter-buttons" role="group" aria-label="Document status filters">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="draft">Draft</button>
+                        <button class="filter-btn" data-filter="review">Review</button>
+                        <button class="filter-btn" data-filter="approved">Approved</button>
+                        <button class="filter-btn" data-filter="urgent">Urgent</button>
+                        <button class="filter-btn" data-filter="archived">Archived</button>
+                    </div>
+                </div>
+                
+                <div class="toolbar">
+                    <button class="btn" onclick="expandAll()" aria-label="Expand all folders">
+                        📂 Expand All
+                    </button>
+                    <button class="btn" onclick="collapseAll()" aria-label="Collapse all folders">
+                        📁 Collapse All
+                    </button>
+                    <button class="btn btn-primary" onclick="refreshTree()" aria-label="Refresh document tree">
+                        🔄 Refresh
+                    </button>
+                </div>
+                
+                <div id="tree" role="tree" aria-label="Document tree"></div>
+            </div>
+            
+            <div class="main-content">
+                <div id="contentArea">
+                    <div class="document-details">
+                        <h3>📋 Enhanced Document Tracking System</h3>
+                        <p class="loading">Loading document tree</p>
+                        <div id="welcomeContent" style="display: none;">
+                            <p>Select a document from the tree to view details and track workflow status.</p>
+                            
+                            <div class="doc-metadata">
+                                <div class="metadata-item">
+                                    <div class="metadata-label">Total Documents</div>
+                                    <div class="metadata-value" id="totalDocs">0</div>
+                                </div>
+                                <div class="metadata-item">
+                                    <div class="metadata-label">Pending Review</div>
+                                    <div class="metadata-value" id="pendingReview">0</div>
+                                </div>
+                                <div class="metadata-item">
+                                    <div class="metadata-label">Urgent Items</div>
+                                    <div class="metadata-value" id="urgentItems">0</div>
+                                </div>
+                                <div class="metadata-item">
+                                    <div class="metadata-label">Approved</div>
+                                    <div class="metadata-value" id="approvedDocs">0</div>
+                                </div>
+                            </div>
+                            
+                            <div class="document-actions">
+                                <h4>📊 Quick Actions</h4>
+                                <div class="action-buttons">
+                                    <button class="btn-action btn-download" onclick="exportData()">
+                                        📥 Export Data
+                                    </button>
+                                    <button class="btn-action btn-edit" onclick="importData()">
+                                        📤 Import Data
+                                    </button>
+                                    <button class="btn-action btn-approve" onclick="showPendingApprovals()">
+                                        👁️ Pending Approvals
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-info">
+                <span id="statusText">Initializing enhanced document tracking system...</span>
+                <span id="searchStatus" style="display: none;"></span>
+            </div>
+            <span id="documentCount">Loading...</span>
+        </div>
+    </div>
+
+    <!-- jQuery and Fancytree JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.fancytree@2.38.3/dist/jquery.fancytree-all-deps.min.js"></script>
+
+    <script>
+        // Enhanced Document Tracking System with improved architecture
+        class DocumentTracker {
+            constructor() {
+                this.tree = null;
+                this.searchTimeout = null;
+                this.currentFilter = 'all';
+                this.documentData = this.getEnhancedDocumentData();
+                this.statistics = { total: 0, pending: 0, urgent: 0, approved: 0 };
+
+                this.init();
+            }
+
+            async init() {
+                try {
+                    this.showNotification('Initializing document tracking system...', 'info');
+
+                    await this.checkDependencies();
+                    this.setupEventListeners();
+                    await this.initializeTree();
+                    this.calculateStatistics();
+                    this.updateUI();
+
+                    this.showNotification('Document tracking system loaded successfully!', 'success');
+                    this.updateStatus('System ready - Enhanced document tracking active');
+
+                } catch (error) {
+                    console.error('Initialization failed:', error);
+                    this.showNotification('Failed to initialize system: ' + error.message, 'error');
+                    this.enableFallbackMode();
+                }
+            }
+
+            async checkDependencies() {
+                const dependencies = [
+                    { name: 'jQuery', check: () => typeof $ !== 'undefined' },
+                    { name: 'Fancytree', check: () => typeof $.ui?.fancytree !== 'undefined' }
+                ];
+
+                const missing = dependencies.filter(dep => !dep.check());
+                if (missing.length > 0) {
+                    throw new Error(`Missing dependencies: ${missing.map(d => d.name).join(', ')}`);
+                }
+            }
+
+            setupEventListeners() {
+                // Enhanced search with debouncing
+                const searchInput = document.getElementById('searchInput');
+                const searchClear = document.getElementById('searchClear');
+
+                searchInput.addEventListener('input', (e) => {
+                    clearTimeout(this.searchTimeout);
+                    const query = e.target.value.trim();
+
+                    // Show/hide clear button
+                    searchClear.style.display = query ? 'block' : 'none';
+
+                    // Debounced search
+                    this.searchTimeout = setTimeout(() => {
+                        this.performSearch(query);
+                    }, 300);
+                });
+
+                searchClear.addEventListener('click', () => {
+                    searchInput.value = '';
+                    searchClear.style.display = 'none';
+                    this.clearSearch();
+                });
+
+                // Filter buttons
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.setActiveFilter(e.target);
+                        this.applyFilter(e.target.dataset.filter);
+                    });
+                });
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch(e.key) {
+                            case 'f':
+                                e.preventDefault();
+                                searchInput.focus();
+                                break;
+                            case 'e':
+                                e.preventDefault();
+                                this.exportData();
+                                break;
+                        }
+                    }
+                });
+            }
+
+            async initializeTree() {
+                return new Promise((resolve, reject) => {
+                    try {
+                        this.tree = $("#tree").fancytree({
+                            extensions: ["filter"],
+                            source: this.documentData,
+
+                            init: (event, data) => {
+                                console.log('Tree initialized with', data);
+                                resolve();
+                            },
+
+                            activate: (event, data) => {
+                                this.onNodeActivate(data.node);
+                            },
+
+                            expand: (event, data) => {
+                                this.updateStatus(`Expanded: ${this.cleanTitle(data.node.title)}`);
+                            },
+
+                            collapse: (event, data) => {
+                                this.updateStatus(`Collapsed: ${this.cleanTitle(data.node.title)}`);
+                            },
+
+                            renderNode: (event, data) => {
+                                this.enhanceNodeRendering(data.node);
+                            },
+
+                            loadError: (event, data) => {
+                                reject(new Error('Tree loading failed: ' + data.error));
+                            }
+                        });
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            }
+
+            enhanceNodeRendering(node) {
+                const $nodeSpan = $(node.span);
+
+                // Add status indicators and version info
+                if (node.data && node.data.status) {
+                    const statusIcon = this.getStatusIcon(node.data.status);
+                    if (statusIcon) {
+                        $nodeSpan.find('.fancytree-title').append(` <span class="status-indicator">${statusIcon}</span>`);
+                    }
+                }
+
+                if (node.data && node.data.version) {
+                    $nodeSpan.find('.fancytree-title').append(` <span class="version-info">(v${node.data.version})</span>`);
+                }
+
+                // Add accessibility attributes
+                $nodeSpan.attr('role', 'treeitem');
+                $nodeSpan.attr('aria-label', this.getNodeAriaLabel(node));
+            }
+
+            getStatusIcon(status) {
+                const icons = {
+                    'draft': '✏️',
+                    'review': '👁️',
+                    'approved': '✅',
+                    'urgent': '🚨',
+                    'rejected': '❌',
+                    'archived': '📦'
+                };
+                return icons[status] || '';
+            }
+
+            getNodeAriaLabel(node) {
+                if (node.data && node.data.type) {
+                    return `${node.data.type} document: ${this.cleanTitle(node.title)}, status: ${node.data.status}`;
+                }
+                return `Folder: ${this.cleanTitle(node.title)}`;
+            }
+
+            cleanTitle(title) {
+                return title.replace(/[📁📄🧾📊📋📖✅👁️🚨✏️❌📦]/g, '').trim();
+            }
+
+            performSearch(query) {
+                const tree = this.tree.fancytree('getTree');
+
+                if (!query) {
+                    this.clearSearch();
+                    return;
+                }
+
+                const matchCount = tree.filterNodes((node) => {
+                    return this.matchesSearchCriteria(node, query);
+                });
+
+                this.updateSearchStatus(query, matchCount);
+            }
+
+            matchesSearchCriteria(node, query) {
+                const searchFields = ['title', 'author', 'department', 'type'];
+                const lowerQuery = query.toLowerCase();
+
+                return searchFields.some(field => {
+                    const value = node.data?.[field] || node.title;
+                    return value && value.toLowerCase().includes(lowerQuery);
+                });
+            }
+
+            clearSearch() {
+                const tree = this.tree.fancytree('getTree');
+                tree.clearFilter();
+                this.hideSearchStatus();
+                this.updateStatus('Search cleared');
+            }
+
+            updateSearchStatus(query, matchCount) {
+                const searchStatus = document.getElementById('searchStatus');
+                searchStatus.textContent = `"${query}" - ${matchCount} matches`;
+                searchStatus.style.display = 'block';
+            }
+
+            hideSearchStatus() {
+                const searchStatus = document.getElementById('searchStatus');
+                searchStatus.style.display = 'none';
+            }
+
+            setActiveFilter(activeBtn) {
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                activeBtn.classList.add('active');
+            }
+
+            applyFilter(filterType) {
+                this.currentFilter = filterType;
+                const tree = this.tree.fancytree('getTree');
+
+                if (filterType === 'all') {
+                    tree.clearFilter();
+                    this.updateStatus('Showing all documents');
+                } else {
+                    const matchCount = tree.filterNodes((node) => {
+                        return node.data && node.data.status === filterType;
+                    });
+                    this.updateStatus(`Filtered by: ${filterType} (${matchCount} matches)`);
+                }
+            }
+
+            onNodeActivate(node) {
+                this.displayDocumentDetails(node);
+                this.updateStatus(`Selected: ${this.cleanTitle(node.title)}`);
+            }
+
+            calculateStatistics() {
+                this.statistics = { total: 0, pending: 0, urgent: 0, approved: 0 };
+
+                const countInNode = (node) => {
+                    if (node.data && node.data.type) {
+                        this.statistics.total++;
+                        if (node.data.status === 'review') this.statistics.pending++;
+                        if (node.data.status === 'urgent') this.statistics.urgent++;
+                        if (node.data.status === 'approved') this.statistics.approved++;
+                    }
+                    if (node.children) {
+                        node.children.forEach(countInNode);
+                    }
+                };
+
+                this.documentData.forEach(countInNode);
+            }
+
+            updateUI() {
+                // Update statistics
+                document.getElementById('totalDocs').textContent = this.statistics.total;
+                document.getElementById('pendingReview').textContent = this.statistics.pending;
+                document.getElementById('urgentItems').textContent = this.statistics.urgent;
+                document.getElementById('approvedDocs').textContent = this.statistics.approved;
+
+                // Update document count
+                document.getElementById('documentCount').textContent = `${this.statistics.total} documents loaded`;
+
+                // Show welcome content
+                document.querySelector('.loading').style.display = 'none';
+                document.getElementById('welcomeContent').style.display = 'block';
+            }
+
+            displayDocumentDetails(node) {
+                const contentArea = document.getElementById('contentArea');
+
+                if (node.data && node.data.type) {
+                    contentArea.innerHTML = this.generateDocumentDetailHTML(node);
+                } else {
+                    contentArea.innerHTML = this.generateFolderDetailHTML(node);
+                }
+            }
+
+            generateDocumentDetailHTML(node) {
+                const data = node.data;
+                const statusClass = `status-${data.status}`;
+
+                return `
+                    <div class="document-details">
+                        <div class="doc-header">
+                            <h2 class="doc-title">${this.cleanTitle(node.title)}</h2>
+                            <div class="status-badge ${statusClass}">${data.status}</div>
+                        </div>
+
+                        <div class="doc-metadata">
+                            <div class="metadata-item">
+                                <div class="metadata-label">Document Type</div>
+                                <div class="metadata-value">${this.capitalizeFirst(data.type)}</div>
+                            </div>
+                            <div class="metadata-item">
+                                <div class="metadata-label">Version</div>
+                                <div class="metadata-value">${data.version || 'N/A'}</div>
+                            </div>
+                            <div class="metadata-item">
+                                <div class="metadata-label">Author</div>
+                                <div class="metadata-value">${data.author}</div>
+                            </div>
+                            <div class="metadata-item">
+                                <div class="metadata-label">Department</div>
+                                <div class="metadata-value">${data.department}</div>
+                            </div>
+                            <div class="metadata-item">
+                                <div class="metadata-label">Created Date</div>
+                                <div class="metadata-value">${this.formatDate(data.created)}</div>
+                            </div>
+                            <div class="metadata-item">
+                                <div class="metadata-label">Last Modified</div>
+                                <div class="metadata-value">${this.formatDate(data.modified || data.created)}</div>
+                            </div>
+                            <div class="metadata-item">
+                                <div class="metadata-label">File Size</div>
+                                <div class="metadata-value">${data.fileSize}</div>
+                            </div>
+                            <div class="metadata-item">
+                                <div class="metadata-label">Priority</div>
+                                <div class="metadata-value">${this.capitalizeFirst(data.priority || 'normal')}</div>
+                            </div>
+                            ${data.amount ? `
+                            <div class="metadata-item">
+                                <div class="metadata-label">Amount</div>
+                                <div class="metadata-value">${data.amount}</div>
+                            </div>
+                            ` : ''}
+                            ${data.expiryDate ? `
+                            <div class="metadata-item">
+                                <div class="metadata-label">Expiry Date</div>
+                                <div class="metadata-value">${this.formatDate(data.expiryDate)}</div>
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="document-actions">
+                            <h4>📋 Document Actions</h4>
+                            <div class="action-buttons">
+                                <button class="btn-action btn-download" onclick="documentTracker.downloadDocument('${node.key}')">
+                                    📥 Download
+                                </button>
+                                <button class="btn-action btn-edit" onclick="documentTracker.editDocument('${node.key}')">
+                                    📝 Edit
+                                </button>
+                                <button class="btn-action btn-approve" onclick="documentTracker.viewHistory('${node.key}')">
+                                    👁️ View History
+                                </button>
+                                ${data.status === 'review' ? `
+                                <button class="btn-action btn-approve" onclick="documentTracker.approveDocument('${node.key}')">
+                                    ✅ Approve
+                                </button>
+                                ` : ''}
+                                ${data.status === 'urgent' ? `
+                                <button class="btn-action btn-priority" onclick="documentTracker.handleUrgent('${node.key}')">
+                                    🚨 Priority Action
+                                </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateFolderDetailHTML(node) {
+                const childCount = node.children ? node.children.length : 0;
+                const docCount = node.children ?
+                    node.children.filter(child => child.data && child.data.type).length : 0;
+
+                return `
+                    <div class="document-details">
+                        <div class="doc-header">
+                            <h2 class="doc-title">${this.cleanTitle(node.title)}</h2>
+                        </div>
+                        <p>📁 This folder contains <strong>${childCount}</strong> items, including <strong>${docCount}</strong> documents.</p>
+
+                        ${node.children ? `
+                        <div class="doc-metadata">
+                            ${node.children.map(child => `
+                                <div class="metadata-item">
+                                    <div class="metadata-label">${child.data ? child.data.type : 'Folder'}</div>
+                                    <div class="metadata-value">${this.cleanTitle(child.title)}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            // Document action methods
+            downloadDocument(documentId) {
+                this.showNotification(`Downloading document: ${documentId}`, 'info');
+                // Implement actual download logic here
+            }
+
+            editDocument(documentId) {
+                this.showNotification(`Opening editor for document: ${documentId}`, 'info');
+                // Implement edit functionality here
+            }
+
+            viewHistory(documentId) {
+                this.showNotification(`Viewing history for document: ${documentId}`, 'info');
+                // Implement history view here
+            }
+
+            approveDocument(documentId) {
+                if (confirm('Are you sure you want to approve this document?')) {
+                    this.showNotification(`Document ${documentId} approved successfully!`, 'success');
+                    // Implement approval logic here
+                }
+            }
+
+            handleUrgent(documentId) {
+                this.showNotification(`Processing urgent document: ${documentId}`, 'warning');
+                // Implement urgent handling here
+            }
+
+            // Utility methods
+            capitalizeFirst(str) {
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            }
+
+            formatDate(dateStr) {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            }
+
+            updateStatus(message) {
+                document.getElementById('statusText').textContent = message;
+            }
+
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `${type}-notification`;
+                notification.innerHTML = `
+                    <div class="error-content">
+                        <span class="error-message">${message}</span>
+                        <button class="error-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                    </div>
+                `;
+
+                document.body.appendChild(notification);
+
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 5000);
+            }
+
+            enableFallbackMode() {
+                document.body.classList.add('fallback-mode');
+                document.getElementById('contentArea').innerHTML = `
+                    <div class="document-details">
+                        <h3>⚠️ System Error</h3>
+                        <p>The document tracking system encountered an error and is running in limited mode.</p>
+                        <button class="btn-action btn-edit" onclick="location.reload()">🔄 Reload Page</button>
+                    </div>
+                `;
+            }
+
+            // Enhanced document data
+            getEnhancedDocumentData() {
+                return [
+                    {
+                        title: "📁 Contracts & Agreements",
+                        key: "contracts",
+                        folder: true,
+                        expanded: true,
+                        children: [
+                            {
+                                title: "ABC Corp Service Agreement v2.1",
+                                key: "doc-001",
+                                extraClasses: "doc-approved",
+                                data: {
+                                    type: "contract",
+                                    status: "approved",
+                                    version: "2.1",
+                                    author: "John Smith",
+                                    department: "Procurement",
+                                    created: "2024-01-15",
+                                    modified: "2024-02-20",
+                                    fileSize: "2.4 MB",
+                                    priority: "normal",
+                                    expiryDate: "2025-01-15"
+                                }
+                            },
+                            {
+                                title: "XYZ Logistics Contract v1.3",
+                                key: "doc-002",
+                                extraClasses: "doc-review",
+                                data: {
+                                    type: "contract",
+                                    status: "review",
+                                    version: "1.3",
+                                    author: "Mike Chen",
+                                    department: "Logistics",
+                                    created: "2024-02-10",
+                                    modified: "2024-02-25",
+                                    fileSize: "1.8 MB",
+                                    priority: "high",
+                                    expiryDate: "2024-12-31"
+                                }
+                            },
+                            {
+                                title: "Emergency Supplier Agreement",
+                                key: "doc-003",
+                                extraClasses: "doc-urgent",
+                                data: {
+                                    type: "contract",
+                                    status: "urgent",
+                                    version: "1.0",
+                                    author: "Lisa Wang",
+                                    department: "Emergency Services",
+                                    created: "2024-03-01",
+                                    modified: "2024-03-01",
+                                    fileSize: "956 KB",
+                                    priority: "urgent",
+                                    expiryDate: "2024-06-01"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        title: "📁 Financial Documents",
+                        key: "financial",
+                        folder: true,
+                        expanded: true,
+                        children: [
+                            {
+                                title: "Q1 2024 Vendor Invoices",
+                                key: "doc-006",
+                                extraClasses: "doc-approved",
+                                data: {
+                                    type: "invoice",
+                                    status: "approved",
+                                    version: "1.0",
+                                    author: "Accounts Payable",
+                                    department: "Finance",
+                                    created: "2024-03-31",
+                                    modified: "2024-04-02",
+                                    fileSize: "3.2 MB",
+                                    priority: "normal",
+                                    amount: "$125,430.50"
+                                }
+                            },
+                            {
+                                title: "Emergency Purchase Invoice #EP-2024-001",
+                                key: "doc-007",
+                                extraClasses: "doc-urgent",
+                                data: {
+                                    type: "invoice",
+                                    status: "urgent",
+                                    version: "1.0",
+                                    author: "Emergency Procurement",
+                                    department: "Emergency Services",
+                                    created: "2024-03-05",
+                                    modified: "2024-03-05",
+                                    fileSize: "567 KB",
+                                    priority: "urgent",
+                                    amount: "$15,750.00"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        title: "📁 Policies & Procedures",
+                        key: "policies",
+                        folder: true,
+                        expanded: true,
+                        children: [
+                            {
+                                title: "Employee Handbook 2024",
+                                key: "doc-010",
+                                extraClasses: "doc-approved",
+                                data: {
+                                    type: "manual",
+                                    status: "approved",
+                                    version: "5.1",
+                                    author: "HR Department",
+                                    department: "Human Resources",
+                                    created: "2024-01-05",
+                                    modified: "2024-02-15",
+                                    fileSize: "4.8 MB",
+                                    priority: "normal"
+                                }
+                            },
+                            {
+                                title: "Remote Work Policy v3.0",
+                                key: "doc-011",
+                                extraClasses: "doc-review",
+                                data: {
+                                    type: "policy",
+                                    status: "review",
+                                    version: "3.0",
+                                    author: "Policy Committee",
+                                    department: "Human Resources",
+                                    created: "2024-02-20",
+                                    modified: "2024-03-01",
+                                    fileSize: "1.3 MB",
+                                    priority: "high"
+                                }
+                            }
+                        ]
+                    }
+                ];
+            }
+        }
+
+        // Global utility functions for backward compatibility
+        let documentTracker;
+
+        function expandAll() {
+            if (documentTracker && documentTracker.tree) {
+                documentTracker.tree.fancytree('getTree').expandAll();
+                documentTracker.updateStatus('All folders expanded');
+            }
+        }
+
+        function collapseAll() {
+            if (documentTracker && documentTracker.tree) {
+                documentTracker.tree.fancytree('getTree').expandAll(false);
+                documentTracker.updateStatus('All folders collapsed');
+            }
+        }
+
+        function refreshTree() {
+            if (documentTracker) {
+                documentTracker.tree.fancytree('getTree').reload(documentTracker.documentData);
+                documentTracker.calculateStatistics();
+                documentTracker.updateUI();
+                documentTracker.updateStatus('Document tree refreshed');
+            }
+        }
+
+        function exportData() {
+            if (documentTracker) {
+                const exportData = {
+                    version: "1.0",
+                    exportDate: new Date().toISOString(),
+                    documents: documentTracker.documentData,
+                    statistics: documentTracker.statistics
+                };
+
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+                    type: 'application/json'
+                });
+
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `erp-documents-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+
+                URL.revokeObjectURL(url);
+                documentTracker.showNotification('Data exported successfully!', 'success');
+            }
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const importData = JSON.parse(e.target.result);
+                            if (importData.documents && Array.isArray(importData.documents)) {
+                                documentTracker.documentData = importData.documents;
+                                refreshTree();
+                                documentTracker.showNotification('Data imported successfully!', 'success');
+                            } else {
+                                throw new Error('Invalid file format');
+                            }
+                        } catch (error) {
+                            documentTracker.showNotification('Import failed: ' + error.message, 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+
+            input.click();
+        }
+
+        function showPendingApprovals() {
+            if (documentTracker) {
+                documentTracker.setActiveFilter(document.querySelector('[data-filter="review"]'));
+                documentTracker.applyFilter('review');
+            }
+        }
+
+        // Initialize the enhanced document tracker when DOM is ready
+        $(document).ready(function() {
+            documentTracker = new DocumentTracker();
+        });
+    </script>
+</body>
+</html>
