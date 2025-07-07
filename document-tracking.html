@@ -797,14 +797,9 @@
                 }
             });
 
-                // Update document count
-                const tree = $("#tree").fancytree("getTree");
-                const totalDocs = countDocuments(tree.getRootNode());
-                $("#documentCount").text(`${totalDocs} documents loaded`);
-
             } catch (error) {
                 console.error('Error initializing Fancytree:', error);
-                $("#statusText").text('Error loading document tree');
+                updateStatus('Error loading document tree: ' + error.message);
             }
 
             // Search functionality

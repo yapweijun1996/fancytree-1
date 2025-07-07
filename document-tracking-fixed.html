@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP Document Tracking - Auto-Load Fixed</title>
+    
+    <!-- Fancytree CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery.fancytree@2.38.3/dist/skin-win8/ui.fancytree.min.css">
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .content {
+            display: flex;
+            min-height: 600px;
+        }
+        
+        .sidebar {
+            width: 400px;
+            border-right: 1px solid #e0e0e0;
+            background: #fafafa;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 20px;
+        }
+        
+        #tree {
+            padding: 15px;
+            height: 520px;
+            overflow-y: auto;
+        }
+        
+        /* Document Status Colors */
+        .doc-draft .fancytree-title { color: #6c757d; font-style: italic; }
+        .doc-review .fancytree-title { color: #fd7e14; font-weight: 500; }
+        .doc-approved .fancytree-title { color: #28a745; font-weight: 600; }
+        .doc-urgent .fancytree-title { color: #e74c3c; font-weight: bold; }
+        
+        .search-box {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            background: white;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .toolbar {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+        
+        .btn {
+            padding: 8px 12px;
+            margin-right: 5px;
+            border: 1px solid #dee2e6;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .btn:hover {
+            background: #e9ecef;
+        }
+        
+        .document-details {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 20px;
+        }
+        
+        .status-bar {
+            background: #343a40;
+            color: white;
+            padding: 10px 20px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .loading {
+            color: #3498db;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Document Tracking System</h1>
+            <p>Enterprise Document Management - Auto-Loading Tree</p>
+        </div>
+        
+        <div class="content">
+            <div class="sidebar">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search documents...">
+                </div>
+                
+                <div class="toolbar">
+                    <button class="btn" onclick="expandAll()">Expand All</button>
+                    <button class="btn" onclick="collapseAll()">Collapse All</button>
+                    <button class="btn" onclick="refreshTree()">Refresh</button>
+                </div>
+                
+                <div id="tree"></div>
+            </div>
+            
+            <div class="main-content">
+                <div id="contentArea">
+                    <div class="document-details">
+                        <h3>📋 Document Tracking System</h3>
+                        <p class="loading">Loading document tree...</p>
+                        <div id="welcomeContent" style="display: none;">
+                            <p>Select a document from the tree to view details and track workflow status.</p>
+                            <p><strong>Document Types:</strong></p>
+                            <ul>
+                                <li>📄 <strong>Contracts</strong> - Service agreements, employment contracts</li>
+                                <li>🧾 <strong>Invoices</strong> - Financial invoices and billing documents</li>
+                                <li>📊 <strong>Reports</strong> - Business reports and analytics</li>
+                                <li>📋 <strong>Policies</strong> - Company policies and procedures</li>
+                                <li>📖 <strong>Manuals</strong> - Employee handbooks and guides</li>
+                            </ul>
+                            <p><strong>Status Indicators:</strong></p>
+                            <ul>
+                                <li>✏️ <span style="color: #6c757d;">Draft</span> - Documents in creation</li>
+                                <li>👁️ <span style="color: #fd7e14;">Review</span> - Under review process</li>
+                                <li>✅ <span style="color: #28a745;">Approved</span> - Approved documents</li>
+                                <li>🚨 <span style="color: #e74c3c;">Urgent</span> - Priority documents</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <span id="statusText">Initializing...</span>
+            <span id="documentCount">Loading...</span>
+        </div>
+    </div>
+
+    <!-- jQuery and Fancytree JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.fancytree@2.38.3/dist/jquery.fancytree-all-deps.min.js"></script>
+    
+    <script>
+        // Document Data - Pre-loaded for immediate display
+        const documentData = [
+            {
+                title: "📁 Contracts & Agreements",
+                key: "contracts",
+                folder: true,
+                expanded: true, // Auto-expand on load
+                children: [
+                    {
+                        title: "ABC Corp Service Agreement v2.1 ✅",
+                        key: "doc-001",
+                        extraClasses: "doc-approved",
+                        data: { 
+                            type: "contract", 
+                            status: "approved", 
+                            version: "2.1",
+                            author: "John Smith",
+                            department: "Procurement",
+                            created: "2024-01-15",
+                            fileSize: "2.4 MB"
+                        }
+                    },
+                    {
+                        title: "XYZ Logistics Contract v1.3 👁️",
+                        key: "doc-002",
+                        extraClasses: "doc-review",
+                        data: { 
+                            type: "contract", 
+                            status: "review", 
+                            version: "1.3",
+                            author: "Mike Chen",
+                            department: "Logistics",
+                            created: "2024-02-10",
+                            fileSize: "1.8 MB"
+                        }
+                    },
+                    {
+                        title: "Emergency Supplier Agreement 🚨",
+                        key: "doc-003",
+                        extraClasses: "doc-urgent",
+                        data: { 
+                            type: "contract", 
+                            status: "urgent", 
+                            version: "1.0",
+                            author: "Lisa Wang",
+                            department: "Emergency Services",
+                            created: "2024-03-01",
+                            fileSize: "956 KB"
+                        }
+                    }
+                ]
+            },
+            {
+                title: "📁 Financial Documents",
+                key: "financial",
+                folder: true,
+                expanded: true, // Auto-expand on load
+                children: [
+                    {
+                        title: "Q1 2024 Vendor Invoices ✅",
+                        key: "doc-006",
+                        extraClasses: "doc-approved",
+                        data: { 
+                            type: "invoice", 
+                            status: "approved", 
+                            amount: "$125,430.50",
+                            author: "Accounts Payable",
+                            department: "Finance",
+                            created: "2024-03-31",
+                            fileSize: "3.2 MB"
+                        }
+                    },
+                    {
+                        title: "Emergency Purchase Invoice 🚨",
+                        key: "doc-007",
+                        extraClasses: "doc-urgent",
+                        data: { 
+                            type: "invoice", 
+                            status: "urgent", 
+                            amount: "$15,750.00",
+                            author: "Emergency Procurement",
+                            department: "Emergency Services",
+                            created: "2024-03-05",
+                            fileSize: "567 KB"
+                        }
+                    }
+                ]
+            },
+            {
+                title: "📁 Policies & Procedures",
+                key: "policies",
+                folder: true,
+                expanded: true, // Auto-expand on load
+                children: [
+                    {
+                        title: "Employee Handbook 2024 ✅",
+                        key: "doc-010",
+                        extraClasses: "doc-approved",
+                        data: { 
+                            type: "manual", 
+                            status: "approved", 
+                            version: "5.1",
+                            author: "HR Department",
+                            department: "Human Resources",
+                            created: "2024-01-05",
+                            fileSize: "4.8 MB"
+                        }
+                    },
+                    {
+                        title: "Remote Work Policy v3.0 👁️",
+                        key: "doc-011",
+                        extraClasses: "doc-review",
+                        data: { 
+                            type: "policy", 
+                            status: "review", 
+                            version: "3.0",
+                            author: "Policy Committee",
+                            department: "Human Resources",
+                            created: "2024-02-20",
+                            fileSize: "1.3 MB"
+                        }
+                    }
+                ]
+            }
+        ];
+
+        // Initialize immediately when DOM is ready
+        $(document).ready(function() {
+            console.log("DOM ready - starting initialization");
+            
+            // Update status
+            $("#statusText").text("Loading document tree...");
+            
+            // Initialize Fancytree with immediate data
+            $("#tree").fancytree({
+                source: documentData,
+                
+                // Callbacks
+                init: function(event, data) {
+                    console.log("Fancytree initialized with", data);
+                    $("#statusText").text("Document tree loaded successfully");
+                    $("#documentCount").text(countDocuments() + " documents available");
+                    
+                    // Show welcome content
+                    $(".loading").hide();
+                    $("#welcomeContent").show();
+                },
+                
+                activate: function(event, data) {
+                    const node = data.node;
+                    displayDocumentInfo(node);
+                    $("#statusText").text("Selected: " + node.title.replace(/[📁📄🧾📊📋📖✅👁️🚨✏️]/g, '').trim());
+                },
+                
+                expand: function(event, data) {
+                    $("#statusText").text("Expanded: " + data.node.title.replace(/[📁📄🧾📊📋📖✅👁️🚨✏️]/g, '').trim());
+                }
+            });
+            
+            // Search functionality
+            $("#searchInput").on("input", function() {
+                const searchTerm = $(this).val();
+                const tree = $("#tree").fancytree("getTree");
+                
+                if (tree && searchTerm) {
+                    tree.filterNodes(searchTerm, { autoExpand: true });
+                    $("#statusText").text("Searching: " + searchTerm);
+                } else if (tree) {
+                    tree.clearFilter();
+                    $("#statusText").text("Search cleared");
+                }
+            });
+        });
+
+        // Utility Functions
+        function countDocuments() {
+            let count = 0;
+            function countInNode(node) {
+                if (node.data && node.data.type) {
+                    count++;
+                }
+                if (node.children) {
+                    node.children.forEach(countInNode);
+                }
+            }
+            documentData.forEach(countInNode);
+            return count;
+        }
+
+        function expandAll() {
+            const tree = $("#tree").fancytree("getTree");
+            if (tree) {
+                tree.expandAll();
+                $("#statusText").text("All folders expanded");
+            }
+        }
+
+        function collapseAll() {
+            const tree = $("#tree").fancytree("getTree");
+            if (tree) {
+                tree.expandAll(false);
+                $("#statusText").text("All folders collapsed");
+            }
+        }
+
+        function refreshTree() {
+            const tree = $("#tree").fancytree("getTree");
+            if (tree) {
+                tree.reload(documentData);
+                $("#statusText").text("Tree refreshed");
+                $("#documentCount").text(countDocuments() + " documents reloaded");
+            }
+        }
+
+        function displayDocumentInfo(node) {
+            const contentArea = $("#contentArea");
+
+            if (node.data && node.data.type) {
+                const data = node.data;
+                const statusColors = {
+                    'draft': '#6c757d',
+                    'review': '#fd7e14',
+                    'approved': '#28a745',
+                    'urgent': '#e74c3c'
+                };
+
+                let content = `
+                    <div class="document-details">
+                        <h3>${node.title}</h3>
+                        <div style="margin: 15px 0;">
+                            <span style="background: ${statusColors[data.status] || '#6c757d'}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; text-transform: uppercase;">
+                                ${data.status}
+                            </span>
+                        </div>
+                        <p><strong>📄 Type:</strong> ${data.type.charAt(0).toUpperCase() + data.type.slice(1)}</p>
+                        ${data.version ? `<p><strong>📋 Version:</strong> ${data.version}</p>` : ''}
+                        <p><strong>👤 Author:</strong> ${data.author}</p>
+                        <p><strong>🏢 Department:</strong> ${data.department}</p>
+                        <p><strong>📅 Created:</strong> ${formatDate(data.created)}</p>
+                        <p><strong>💾 File Size:</strong> ${data.fileSize}</p>
+                        ${data.amount ? `<p><strong>💰 Amount:</strong> ${data.amount}</p>` : ''}
+
+                        <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 4px; border-left: 4px solid ${statusColors[data.status] || '#6c757d'};">
+                            <h4>📋 Document Actions</h4>
+                            <button class="btn" style="margin-right: 10px;">📥 Download</button>
+                            <button class="btn" style="margin-right: 10px;">📝 Edit</button>
+                            <button class="btn" style="margin-right: 10px;">👁️ View History</button>
+                            ${data.status === 'review' ? '<button class="btn" style="background: #28a745; color: white;">✅ Approve</button>' : ''}
+                            ${data.status === 'urgent' ? '<button class="btn" style="background: #dc3545; color: white;">🚨 Priority Action</button>' : ''}
+                        </div>
+                    </div>
+                `;
+                contentArea.html(content);
+            } else {
+                // Folder view
+                const childCount = node.children ? node.children.length : 0;
+                const docCount = node.children ? node.children.filter(child => child.data && child.data.type).length : 0;
+
+                contentArea.html(`
+                    <div class="document-details">
+                        <h3>${node.title}</h3>
+                        <p>📁 This folder contains <strong>${childCount}</strong> items, including <strong>${docCount}</strong> documents.</p>
+
+                        ${node.children ? `
+                        <div style="margin-top: 20px;">
+                            <h4>📋 Contents:</h4>
+                            <ul>
+                                ${node.children.map(child => `
+                                    <li style="margin: 5px 0;">
+                                        <strong>${child.title.replace(/[📁📄🧾📊📋📖✅👁️🚨✏️]/g, '').trim()}</strong>
+                                        ${child.data ? ` - ${child.data.type}` : ' (folder)'}
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                        ` : ''}
+                    </div>
+                `);
+            }
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+    </script>
+</body>
+</html>
