@@ -259,8 +259,8 @@
         </div>
         
         <div class="status-bar">
-            <span id="statusText">Ready</span>
-            <span id="nodeCount">0 nodes loaded</span>
+            <span id="statusText">Loading ERP System...</span>
+            <span id="nodeCount">Initializing...</span>
         </div>
     </div>
 
@@ -276,6 +276,7 @@
                 title: "Financial Management",
                 key: "finance",
                 folder: true,
+                expanded: true,
                 extraClasses: "erp-module",
                 children: [
                     {
@@ -320,6 +321,7 @@
                 title: "Human Resources",
                 key: "hr",
                 folder: true,
+                expanded: true,
                 extraClasses: "erp-module",
                 children: [
                     {
@@ -352,6 +354,7 @@
                 title: "Supply Chain Management",
                 key: "scm",
                 folder: true,
+                expanded: true,
                 extraClasses: "erp-module",
                 children: [
                     {
@@ -384,6 +387,7 @@
                 title: "Customer Relationship Management",
                 key: "crm",
                 folder: true,
+                expanded: true,
                 extraClasses: "erp-module",
                 children: [
                     {
@@ -416,6 +420,7 @@
                 title: "Manufacturing",
                 key: "mfg",
                 folder: true,
+                expanded: true,
                 extraClasses: "erp-module",
                 children: [
                     {
@@ -448,6 +453,7 @@
                 title: "Business Intelligence",
                 key: "bi",
                 folder: true,
+                expanded: true,
                 extraClasses: "erp-module",
                 children: [
                     {
@@ -538,28 +544,52 @@
 
         // Initialize Fancytree
         $(document).ready(function() {
-            $("#tree").fancytree({
-                extensions: ["filter", "edit", "dnd", "table"],
-                source: erpTreeData,
+            console.log("Initializing ERP System Tree...");
 
-                // Tree options
-                checkbox: false,
-                selectMode: 1,
-                clickFolderMode: 2,
+            try {
+                $("#tree").fancytree({
+                    extensions: ["filter"],
+                    source: erpTreeData,
 
-                // Filter extension options
-                filter: {
-                    autoApply: true,
-                    autoExpand: true,
-                    counter: true,
-                    fuzzy: false,
-                    hideExpandedCounter: true,
-                    hideExpanders: false,
-                    highlight: true,
-                    leavesOnly: false,
-                    nodata: true,
-                    mode: "hide"
-                },
+                    // Tree options
+                    checkbox: false,
+                    selectMode: 1,
+                    clickFolderMode: 2,
+
+                    // Filter extension options
+                    filter: {
+                        autoApply: true,
+                        autoExpand: true,
+                        counter: true,
+                        fuzzy: false,
+                        hideExpandedCounter: true,
+                        hideExpanders: false,
+                        highlight: true,
+                        leavesOnly: false,
+                        nodata: true,
+                        mode: "hide"
+                    },
+
+                    // Add initialization callback
+                    init: function(event, data) {
+                        console.log("Fancytree initialized successfully");
+                        updateStatus("ERP System loaded successfully");
+
+                        // Update node count
+                        const tree = $("#tree").fancytree("getTree");
+                        const totalNodes = tree.count();
+                        $("#nodeCount").text(`${totalNodes} nodes loaded`);
+
+                        // Auto-expand first level folders
+                        setTimeout(function() {
+                            tree.getRootNode().visit(function(node) {
+                                if (node.getLevel() === 1) {
+                                    node.setExpanded(true);
+                                }
+                            });
+                            updateStatus("ERP modules expanded and ready");
+                        }, 200);
+                    },
 
                 // Event handlers
                 activate: function(event, data) {
@@ -612,10 +642,10 @@
                 }
             });
 
-            // Update node count
-            const tree = $("#tree").fancytree("getTree");
-            const totalNodes = tree.count();
-            $("#nodeCount").text(`${totalNodes} nodes loaded`);
+            } catch (error) {
+                console.error('Error initializing Fancytree:', error);
+                updateStatus('Error loading ERP system: ' + error.message);
+            }
         });
 
         // Utility functions
