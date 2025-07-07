@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP System - Fancytree Navigation</title>
+    
+    <!-- Fancytree CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery.fancytree@2.38.3/dist/skin-win8/ui.fancytree.min.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .content {
+            display: flex;
+            min-height: 600px;
+        }
+        
+        .sidebar {
+            width: 350px;
+            border-right: 1px solid #e0e0e0;
+            background: #fafafa;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 20px;
+        }
+        
+        #tree {
+            padding: 10px;
+            height: 580px;
+            overflow-y: auto;
+        }
+        
+        .fancytree-container {
+            border: none;
+        }
+        
+        /* Custom node styling for ERP modules */
+        .fancytree-node.erp-module > .fancytree-title {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .fancytree-node.erp-function > .fancytree-title {
+            color: #3498db;
+        }
+        
+        .fancytree-node.erp-report > .fancytree-title {
+            color: #e74c3c;
+        }
+        
+        .fancytree-node.erp-config > .fancytree-title {
+            color: #f39c12;
+        }
+        
+        /* Node icons */
+        .fancytree-icon {
+            margin-right: 5px;
+        }
+        
+        .module-icon::before {
+            content: "📁";
+            margin-right: 5px;
+        }
+        
+        .function-icon::before {
+            content: "⚙️";
+            margin-right: 5px;
+        }
+        
+        .report-icon::before {
+            content: "📊";
+            margin-right: 5px;
+        }
+        
+        .config-icon::before {
+            content: "🔧";
+            margin-right: 5px;
+        }
+        
+        .search-box {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .toolbar {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            margin-right: 5px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .btn:hover {
+            background: #e9ecef;
+        }
+        
+        .content-area {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 20px;
+            min-height: 400px;
+        }
+        
+        .breadcrumb {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .status-bar {
+            background: #343a40;
+            color: white;
+            padding: 8px 20px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .module-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-item strong {
+            color: #2c3e50;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+            #tree {
+                height: 300px;
+            }
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ERP System Navigation</h1>
+            <p>Enterprise Resource Planning - Module Explorer</p>
+        </div>
+        
+        <div class="content">
+            <div class="sidebar">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search modules and functions...">
+                </div>
+                
+                <div class="toolbar">
+                    <button class="btn" onclick="expandAll()">Expand All</button>
+                    <button class="btn" onclick="collapseAll()">Collapse All</button>
+                    <button class="btn" onclick="reloadTree()">Reload</button>
+                </div>
+                
+                <div id="tree"></div>
+            </div>
+            
+            <div class="main-content">
+                <div class="breadcrumb" id="breadcrumb">
+                    Home
+                </div>
+                
+                <div class="content-area" id="contentArea">
+                    <h3>Welcome to ERP System</h3>
+                    <p>Select a module or function from the navigation tree to get started.</p>
+                    <p>This system provides comprehensive access to all ERP modules including:</p>
+                    <ul>
+                        <li><strong>Financial Management</strong> - Accounting, budgeting, and financial reporting</li>
+                        <li><strong>Human Resources</strong> - Employee management, payroll, and benefits</li>
+                        <li><strong>Supply Chain</strong> - Inventory, procurement, and logistics</li>
+                        <li><strong>Customer Relations</strong> - Sales, marketing, and customer service</li>
+                        <li><strong>Manufacturing</strong> - Production planning and quality control</li>
+                        <li><strong>Business Intelligence</strong> - Analytics and reporting tools</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <span id="statusText">Ready</span>
+            <span id="nodeCount">0 nodes loaded</span>
+        </div>
+    </div>
+
+    <!-- jQuery and Fancytree JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.fancytree@2.38.3/dist/jquery.fancytree-all-deps.min.js"></script>
+    
+    <script>
+        // ERP System Tree Data Structure
+        const erpTreeData = [
+            {
+                title: "Financial Management",
+                key: "finance",
+                folder: true,
+                extraClasses: "erp-module",
+                children: [
+                    {
+                        title: "General Ledger",
+                        key: "finance-gl",
+                        folder: true,
+                        extraClasses: "erp-function",
+                        children: [
+                            { title: "Chart of Accounts", key: "finance-gl-coa", extraClasses: "erp-config" },
+                            { title: "Journal Entries", key: "finance-gl-journal", extraClasses: "erp-function" },
+                            { title: "Trial Balance", key: "finance-gl-trial", extraClasses: "erp-report" },
+                            { title: "Financial Statements", key: "finance-gl-statements", extraClasses: "erp-report" }
+                        ]
+                    },
+                    {
+                        title: "Accounts Payable",
+                        key: "finance-ap",
+                        folder: true,
+                        extraClasses: "erp-function",
+                        children: [
+                            { title: "Vendor Management", key: "finance-ap-vendors", extraClasses: "erp-function" },
+                            { title: "Invoice Processing", key: "finance-ap-invoices", extraClasses: "erp-function" },
+                            { title: "Payment Processing", key: "finance-ap-payments", extraClasses: "erp-function" },
+                            { title: "Aging Reports", key: "finance-ap-aging", extraClasses: "erp-report" }
+                        ]
+                    },
+                    {
+                        title: "Accounts Receivable",
+                        key: "finance-ar",
+                        folder: true,
+                        extraClasses: "erp-function",
+                        children: [
+                            { title: "Customer Management", key: "finance-ar-customers", extraClasses: "erp-function" },
+                            { title: "Invoice Generation", key: "finance-ar-invoicing", extraClasses: "erp-function" },
+                            { title: "Payment Collection", key: "finance-ar-collections", extraClasses: "erp-function" },
+                            { title: "Credit Management", key: "finance-ar-credit", extraClasses: "erp-function" }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: "Human Resources",
+                key: "hr",
+                folder: true,
+                extraClasses: "erp-module",
+                children: [
+                    {
+                        title: "Employee Management",
+                        key: "hr-emp",
+                        folder: true,
+                        extraClasses: "erp-function",
+                        children: [
+                            { title: "Employee Records", key: "hr-emp-records", extraClasses: "erp-function" },
+                            { title: "Organizational Chart", key: "hr-emp-orgchart", extraClasses: "erp-function" },
+                            { title: "Performance Reviews", key: "hr-emp-performance", extraClasses: "erp-function" },
+                            { title: "Training Management", key: "hr-emp-training", extraClasses: "erp-function" }
+                        ]
+                    },
+                    {
+                        title: "Payroll",
+                        key: "hr-payroll",
+                        folder: true,
+                        extraClasses: "erp-function",
+                        children: [
+                            { title: "Salary Processing", key: "hr-payroll-salary", extraClasses: "erp-function" },
+                            { title: "Tax Calculations", key: "hr-payroll-tax", extraClasses: "erp-function" },
+                            { title: "Benefits Administration", key: "hr-payroll-benefits", extraClasses: "erp-function" },
+                            { title: "Payroll Reports", key: "hr-payroll-reports", extraClasses: "erp-report" }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: "Supply Chain Management",
+                key: "scm",
+                folder: true,
+                extraClasses: "erp-module",
+                children: [
+                    {
+                        title: "Inventory Management",
+                        key: "scm-inventory",
+                        folder: true,
+                        extraClasses: "erp-function",
+                        children: [
+                            { title: "Stock Control", key: "scm-inventory-stock", extraClasses: "erp-function" },
+                            { title: "Warehouse Management", key: "scm-inventory-warehouse", extraClasses: "erp-function" },
+                            { title: "Inventory Valuation", key: "scm-inventory-valuation", extraClasses: "erp-function" },
+                            { title: "Stock Reports", key: "scm-inventory-reports", extraClasses: "erp-report" }
+                        ]
+                    },
+                    {
+                        title: "Procurement",
+                        key: "scm-procurement",
+                        folder: true,
+                        extraClasses: "erp-function",
+                        children: [
+                            { title: "Purchase Orders", key: "scm-procurement-po", extraClasses: "erp-function" },
+                            { title: "Supplier Management", key: "scm-procurement-suppliers", extraClasses: "erp-function" },
+                            { title: "Contract Management", key: "scm-procurement-contracts", extraClasses: "erp-function" },
+                            { title: "Procurement Analytics", key: "scm-procurement-analytics", extraClasses: "erp-report" }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: "Customer Relationship Management",
+                key: "crm",
+                folder: true,
+                extraClasses: "erp-module",
+                children: [
+                    {
+                        title: "Sales Management",
+                        key: "crm-sales",
+                        folder: true,
+                        extraClasses: "erp-function",
+                        children: [
+                            { title: "Lead Management", key: "crm-sales-leads", extraClasses: "erp-function" },
+                            { title: "Opportunity Tracking", key: "crm-sales-opportunities", extraClasses: "erp-function" },
+                            { title: "Sales Pipeline", key: "crm-sales-pipeline", extraClasses: "erp-function" },
+                            { title: "Sales Reports", key: "crm-sales-reports", extraClasses: "erp-report" }
+                        ]
+                    },
+                    {
+                        title: "Customer Service",
+                        key: "crm-service",
+                        folder: true,
+                        extraClasses: "erp-function",
+                        children: [
+                            { title: "Ticket Management", key: "crm-service-tickets", extraClasses: "erp-function" },
+                            { title: "Knowledge Base", key: "crm-service-kb", extraClasses: "erp-function" },
+                            { title: "Customer Feedback", key: "crm-service-feedback", extraClasses: "erp-function" },
+                            { title: "Service Analytics", key: "crm-service-analytics", extraClasses: "erp-report" }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: "Manufacturing",
+                key: "mfg",
+                folder: true,
+                extraClasses: "erp-module",
+                children: [
+                    {
+                        title: "Production Planning",
+                        key: "mfg-planning",
+                        folder: true,
+                        extraClasses: "erp-function",
+                        children: [
+                            { title: "Master Production Schedule", key: "mfg-planning-mps", extraClasses: "erp-function" },
+                            { title: "Material Requirements Planning", key: "mfg-planning-mrp", extraClasses: "erp-function" },
+                            { title: "Capacity Planning", key: "mfg-planning-capacity", extraClasses: "erp-function" },
+                            { title: "Production Reports", key: "mfg-planning-reports", extraClasses: "erp-report" }
+                        ]
+                    },
+                    {
+                        title: "Quality Control",
+                        key: "mfg-quality",
+                        folder: true,
+                        extraClasses: "erp-function",
+                        children: [
+                            { title: "Quality Inspections", key: "mfg-quality-inspections", extraClasses: "erp-function" },
+                            { title: "Non-Conformance Management", key: "mfg-quality-ncr", extraClasses: "erp-function" },
+                            { title: "Quality Metrics", key: "mfg-quality-metrics", extraClasses: "erp-report" },
+                            { title: "Audit Management", key: "mfg-quality-audits", extraClasses: "erp-function" }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: "Business Intelligence",
+                key: "bi",
+                folder: true,
+                extraClasses: "erp-module",
+                children: [
+                    {
+                        title: "Analytics & Reporting",
+                        key: "bi-analytics",
+                        folder: true,
+                        extraClasses: "erp-function",
+                        children: [
+                            { title: "Executive Dashboard", key: "bi-analytics-dashboard", extraClasses: "erp-report" },
+                            { title: "Financial Analytics", key: "bi-analytics-financial", extraClasses: "erp-report" },
+                            { title: "Operational Metrics", key: "bi-analytics-operational", extraClasses: "erp-report" },
+                            { title: "Custom Reports", key: "bi-analytics-custom", extraClasses: "erp-report" }
+                        ]
+                    },
+                    {
+                        title: "Data Management",
+                        key: "bi-data",
+                        folder: true,
+                        extraClasses: "erp-function",
+                        children: [
+                            { title: "Data Integration", key: "bi-data-integration", extraClasses: "erp-config" },
+                            { title: "Data Quality", key: "bi-data-quality", extraClasses: "erp-function" },
+                            { title: "Data Warehouse", key: "bi-data-warehouse", extraClasses: "erp-config" },
+                            { title: "ETL Processes", key: "bi-data-etl", extraClasses: "erp-config" }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        // Content data for different modules
+        const moduleContent = {
+            "finance": {
+                title: "Financial Management",
+                content: `
+                    <h3>Financial Management Module</h3>
+                    <p>Comprehensive financial management tools for your organization.</p>
+                    <div class="module-stats">
+                        <div class="stat-item">
+                            <strong>Active Accounts:</strong> 1,247
+                        </div>
+                        <div class="stat-item">
+                            <strong>Monthly Transactions:</strong> 15,632
+                        </div>
+                        <div class="stat-item">
+                            <strong>Outstanding Invoices:</strong> $125,430
+                        </div>
+                    </div>
+                `
+            },
+            "hr": {
+                title: "Human Resources",
+                content: `
+                    <h3>Human Resources Module</h3>
+                    <p>Complete HR management system for employee lifecycle management.</p>
+                    <div class="module-stats">
+                        <div class="stat-item">
+                            <strong>Total Employees:</strong> 342
+                        </div>
+                        <div class="stat-item">
+                            <strong>Open Positions:</strong> 12
+                        </div>
+                        <div class="stat-item">
+                            <strong>Pending Reviews:</strong> 28
+                        </div>
+                    </div>
+                `
+            },
+            "scm": {
+                title: "Supply Chain Management",
+                content: `
+                    <h3>Supply Chain Management</h3>
+                    <p>End-to-end supply chain visibility and control.</p>
+                    <div class="module-stats">
+                        <div class="stat-item">
+                            <strong>Active SKUs:</strong> 2,847
+                        </div>
+                        <div class="stat-item">
+                            <strong>Suppliers:</strong> 156
+                        </div>
+                        <div class="stat-item">
+                            <strong>Pending Orders:</strong> 89
+                        </div>
+                    </div>
+                `
+            }
+        };
+
+        // Initialize Fancytree
+        $(document).ready(function() {
+            $("#tree").fancytree({
+                extensions: ["filter", "edit", "dnd", "table"],
+                source: erpTreeData,
+
+                // Tree options
+                checkbox: false,
+                selectMode: 1,
+                clickFolderMode: 2,
+
+                // Filter extension options
+                filter: {
+                    autoApply: true,
+                    autoExpand: true,
+                    counter: true,
+                    fuzzy: false,
+                    hideExpandedCounter: true,
+                    hideExpanders: false,
+                    highlight: true,
+                    leavesOnly: false,
+                    nodata: true,
+                    mode: "hide"
+                },
+
+                // Event handlers
+                activate: function(event, data) {
+                    const node = data.node;
+                    updateBreadcrumb(node);
+                    updateContent(node);
+                    updateStatus(`Selected: ${node.title}`);
+                },
+
+                expand: function(event, data) {
+                    updateStatus(`Expanded: ${data.node.title}`);
+                },
+
+                collapse: function(event, data) {
+                    updateStatus(`Collapsed: ${data.node.title}`);
+                },
+
+                renderNode: function(event, data) {
+                    const node = data.node;
+                    const $nodeSpan = $(node.span);
+
+                    // Add custom icons based on node type
+                    if (node.extraClasses) {
+                        if (node.extraClasses.includes('erp-module')) {
+                            $nodeSpan.find('.fancytree-title').prepend('<span class="module-icon"></span>');
+                        } else if (node.extraClasses.includes('erp-function')) {
+                            $nodeSpan.find('.fancytree-title').prepend('<span class="function-icon"></span>');
+                        } else if (node.extraClasses.includes('erp-report')) {
+                            $nodeSpan.find('.fancytree-title').prepend('<span class="report-icon"></span>');
+                        } else if (node.extraClasses.includes('erp-config')) {
+                            $nodeSpan.find('.fancytree-title').prepend('<span class="config-icon"></span>');
+                        }
+                    }
+                }
+            });
+
+            // Search functionality
+            $("#searchInput").on("input", function() {
+                const searchTerm = $(this).val();
+                const tree = $("#tree").fancytree("getTree");
+
+                if (searchTerm) {
+                    tree.filterNodes(searchTerm, {
+                        autoExpand: true
+                    });
+                    updateStatus(`Search: "${searchTerm}" - ${tree.countSelected()} matches`);
+                } else {
+                    tree.clearFilter();
+                    updateStatus("Search cleared");
+                }
+            });
+
+            // Update node count
+            const tree = $("#tree").fancytree("getTree");
+            const totalNodes = tree.count();
+            $("#nodeCount").text(`${totalNodes} nodes loaded`);
+        });
+
+        // Utility functions
+        function expandAll() {
+            $("#tree").fancytree("getTree").expandAll();
+            updateStatus("All nodes expanded");
+        }
+
+        function collapseAll() {
+            $("#tree").fancytree("getTree").expandAll(false);
+            updateStatus("All nodes collapsed");
+        }
+
+        function reloadTree() {
+            $("#tree").fancytree("getTree").reload(erpTreeData);
+            updateStatus("Tree reloaded");
+        }
+
+        function updateBreadcrumb(node) {
+            const breadcrumbParts = [];
+            let currentNode = node;
+
+            while (currentNode) {
+                breadcrumbParts.unshift(currentNode.title);
+                currentNode = currentNode.parent;
+            }
+
+            breadcrumbParts.unshift("Home");
+            $("#breadcrumb").html(breadcrumbParts.join(" > "));
+        }
+
+        function updateContent(node) {
+            const contentArea = $("#contentArea");
+            const nodeKey = node.key;
+
+            // Check if we have specific content for this module
+            const moduleKey = nodeKey.split('-')[0];
+            if (moduleContent[moduleKey]) {
+                contentArea.html(moduleContent[moduleKey].content);
+            } else {
+                // Generic content based on node type
+                let content = `<h3>${node.title}</h3>`;
+
+                if (node.folder && node.children) {
+                    content += `<p>This module contains ${node.children.length} sub-items:</p><ul>`;
+                    node.children.forEach(child => {
+                        content += `<li><strong>${child.title}</strong></li>`;
+                    });
+                    content += `</ul>`;
+                } else {
+                    content += `<p>Function: ${node.title}</p>`;
+                    content += `<p>Key: ${node.key}</p>`;
+
+                    if (node.extraClasses) {
+                        if (node.extraClasses.includes('erp-report')) {
+                            content += `<p><em>This is a reporting function. Click to generate reports and analytics.</em></p>`;
+                        } else if (node.extraClasses.includes('erp-config')) {
+                            content += `<p><em>This is a configuration function. Use this to set up system parameters.</em></p>`;
+                        } else {
+                            content += `<p><em>This is an operational function. Access business processes and data entry forms.</em></p>`;
+                        }
+                    }
+                }
+
+                contentArea.html(content);
+            }
+        }
+
+        function updateStatus(message) {
+            $("#statusText").text(message);
+        }
+    </script>
+</body>
+</html>

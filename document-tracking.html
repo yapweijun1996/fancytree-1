@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP Document Tracking System</title>
+    
+    <!-- Fancytree CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery.fancytree@2.38.3/dist/skin-win8/ui.fancytree.min.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .content {
+            display: flex;
+            min-height: 700px;
+        }
+        
+        .sidebar {
+            width: 400px;
+            border-right: 1px solid #e0e0e0;
+            background: #fafafa;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 20px;
+        }
+        
+        #tree {
+            padding: 15px;
+            height: 620px;
+            overflow-y: auto;
+        }
+        
+        /* Document Status Styling */
+        .doc-draft > .fancytree-title {
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .doc-review > .fancytree-title {
+            color: #fd7e14;
+            font-weight: 500;
+        }
+        
+        .doc-approved > .fancytree-title {
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        .doc-rejected > .fancytree-title {
+            color: #dc3545;
+            text-decoration: line-through;
+        }
+        
+        .doc-archived > .fancytree-title {
+            color: #6c757d;
+            opacity: 0.7;
+        }
+        
+        .doc-urgent > .fancytree-title {
+            color: #e74c3c;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        /* Document Type Icons */
+        .fancytree-title.doc-contract::before { content: "📄"; margin-right: 8px; }
+        .fancytree-title.doc-invoice::before { content: "🧾"; margin-right: 8px; }
+        .fancytree-title.doc-report::before { content: "📊"; margin-right: 8px; }
+        .fancytree-title.doc-policy::before { content: "📋"; margin-right: 8px; }
+        .fancytree-title.doc-manual::before { content: "📖"; margin-right: 8px; }
+        .fancytree-title.doc-certificate::before { content: "🏆"; margin-right: 8px; }
+        .fancytree-title.doc-legal::before { content: "⚖️"; margin-right: 8px; }
+        .fancytree-title.doc-financial::before { content: "💰"; margin-right: 8px; }
+        .fancytree-title.folder-icon::before { content: "📁"; margin-right: 8px; }
+        
+        .search-box {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            background: white;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .toolbar {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            background: #f8f9fa;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .btn {
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+        
+        .filter-section {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            background: white;
+        }
+        
+        .filter-section h4 {
+            margin: 0 0 10px 0;
+            color: #495057;
+            font-size: 14px;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .filter-btn {
+            padding: 4px 8px;
+            border: 1px solid #dee2e6;
+            background: #f8f9fa;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .document-details {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .doc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .doc-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .status-draft { background: #6c757d; color: white; }
+        .status-review { background: #fd7e14; color: white; }
+        .status-approved { background: #28a745; color: white; }
+        .status-rejected { background: #dc3545; color: white; }
+        .status-archived { background: #e9ecef; color: #6c757d; }
+        
+        .doc-metadata {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .metadata-item {
+            background: white;
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .metadata-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        
+        .metadata-value {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .version-history {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .version-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        
+        .version-item:last-child {
+            border-bottom: none;
+        }
+        
+        .workflow-timeline {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-left: 3px solid #e9ecef;
+            padding-left: 15px;
+            margin-left: 10px;
+            position: relative;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 15px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #3498db;
+        }
+        
+        .timeline-item.completed::before {
+            background: #28a745;
+        }
+        
+        .timeline-item.current::before {
+            background: #fd7e14;
+        }
+        
+        .breadcrumb {
+            background: #e9ecef;
+            padding: 12px 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #495057;
+        }
+        
+        .status-bar {
+            background: #343a40;
+            color: white;
+            padding: 10px 20px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .quick-stats {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 16px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        
+        .stat-label {
+            font-size: 10px;
+            color: #adb5bd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Document Tracking System</h1>
+            <p>Enterprise Document Management & Workflow Control</p>
+        </div>
+        
+        <div class="content">
+            <div class="sidebar">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search documents, contracts, reports...">
+                </div>
+                
+                <div class="filter-section">
+                    <h4>Filter by Status</h4>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="draft">Draft</button>
+                        <button class="filter-btn" data-filter="review">Review</button>
+                        <button class="filter-btn" data-filter="approved">Approved</button>
+                        <button class="filter-btn" data-filter="urgent">Urgent</button>
+                    </div>
+                </div>
+                
+                <div class="toolbar">
+                    <button class="btn" onclick="expandAll()">Expand All</button>
+                    <button class="btn" onclick="collapseAll()">Collapse All</button>
+                    <button class="btn" onclick="refreshDocuments()">Refresh</button>
+                    <button class="btn" onclick="showPendingApprovals()">Pending</button>
+                </div>
+                
+                <div id="tree"></div>
+            </div>
+            
+            <div class="main-content">
+                <div class="breadcrumb" id="breadcrumb">
+                    Document Repository
+                </div>
+                
+                <div id="contentArea">
+                    <div class="document-details">
+                        <h3>📋 Welcome to Document Tracking System</h3>
+                        <p>Select a document from the tree to view details, track versions, and monitor workflow status.</p>
+                        
+                        <div class="quick-stats">
+                            <div class="stat-item">
+                                <div class="stat-number">247</div>
+                                <div class="stat-label">Total Documents</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">18</div>
+                                <div class="stat-label">Pending Review</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">5</div>
+                                <div class="stat-label">Urgent</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">156</div>
+                                <div class="stat-label">Approved</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <span id="statusText">Ready - Document tracking system loaded</span>
+            <span id="documentCount">0 documents loaded</span>
+        </div>
+    </div>
+
+    <!-- jQuery and Fancytree JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.fancytree@2.38.3/dist/jquery.fancytree-all-deps.min.js"></script>
+
+    <script>
+        // Document Tracking Tree Data Structure
+        const documentTreeData = [
+            {
+                title: "Contracts & Agreements",
+                key: "contracts",
+                folder: true,
+                extraClasses: "folder-icon",
+                children: [
+                    {
+                        title: "Vendor Contracts",
+                        key: "contracts-vendor",
+                        folder: true,
+                        children: [
+                            {
+                                title: "ABC Corp Service Agreement v2.1",
+                                key: "doc-001",
+                                extraClasses: "doc-contract doc-approved",
+                                data: {
+                                    type: "contract",
+                                    status: "approved",
+                                    version: "2.1",
+                                    author: "John Smith",
+                                    created: "2024-01-15",
+                                    modified: "2024-02-20",
+                                    approver: "Sarah Johnson",
+                                    expiryDate: "2025-01-15",
+                                    department: "Procurement",
+                                    priority: "normal",
+                                    fileSize: "2.4 MB"
+                                }
+                            },
+                            {
+                                title: "XYZ Logistics Contract v1.3",
+                                key: "doc-002",
+                                extraClasses: "doc-contract doc-review",
+                                data: {
+                                    type: "contract",
+                                    status: "review",
+                                    version: "1.3",
+                                    author: "Mike Chen",
+                                    created: "2024-02-10",
+                                    modified: "2024-02-25",
+                                    reviewer: "Legal Team",
+                                    expiryDate: "2024-12-31",
+                                    department: "Logistics",
+                                    priority: "high",
+                                    fileSize: "1.8 MB"
+                                }
+                            },
+                            {
+                                title: "Emergency Supplier Agreement",
+                                key: "doc-003",
+                                extraClasses: "doc-contract doc-urgent",
+                                data: {
+                                    type: "contract",
+                                    status: "urgent",
+                                    version: "1.0",
+                                    author: "Lisa Wang",
+                                    created: "2024-03-01",
+                                    modified: "2024-03-01",
+                                    reviewer: "Emergency Response Team",
+                                    expiryDate: "2024-06-01",
+                                    department: "Emergency Services",
+                                    priority: "urgent",
+                                    fileSize: "956 KB"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        title: "Employment Contracts",
+                        key: "contracts-employment",
+                        folder: true,
+                        children: [
+                            {
+                                title: "Senior Developer Contract Template",
+                                key: "doc-004",
+                                extraClasses: "doc-contract doc-approved",
+                                data: {
+                                    type: "contract",
+                                    status: "approved",
+                                    version: "3.2",
+                                    author: "HR Department",
+                                    created: "2024-01-05",
+                                    modified: "2024-02-15",
+                                    approver: "Legal & HR",
+                                    department: "Human Resources",
+                                    priority: "normal",
+                                    fileSize: "1.2 MB"
+                                }
+                            },
+                            {
+                                title: "Remote Work Agreement v2.0",
+                                key: "doc-005",
+                                extraClasses: "doc-contract doc-draft",
+                                data: {
+                                    type: "contract",
+                                    status: "draft",
+                                    version: "2.0",
+                                    author: "Jennifer Lee",
+                                    created: "2024-02-28",
+                                    modified: "2024-03-02",
+                                    department: "Human Resources",
+                                    priority: "normal",
+                                    fileSize: "845 KB"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: "Financial Documents",
+                key: "financial",
+                folder: true,
+                extraClasses: "folder-icon",
+                children: [
+                    {
+                        title: "Invoices",
+                        key: "financial-invoices",
+                        folder: true,
+                        children: [
+                            {
+                                title: "Q1 2024 Vendor Invoices",
+                                key: "doc-006",
+                                extraClasses: "doc-invoice doc-approved",
+                                data: {
+                                    type: "invoice",
+                                    status: "approved",
+                                    version: "1.0",
+                                    author: "Accounts Payable",
+                                    created: "2024-03-31",
+                                    modified: "2024-04-02",
+                                    approver: "Finance Manager",
+                                    amount: "$125,430.50",
+                                    department: "Finance",
+                                    priority: "normal",
+                                    fileSize: "3.2 MB"
+                                }
+                            },
+                            {
+                                title: "Emergency Purchase Invoice #EP-2024-001",
+                                key: "doc-007",
+                                extraClasses: "doc-invoice doc-urgent",
+                                data: {
+                                    type: "invoice",
+                                    status: "urgent",
+                                    version: "1.0",
+                                    author: "Emergency Procurement",
+                                    created: "2024-03-05",
+                                    modified: "2024-03-05",
+                                    amount: "$15,750.00",
+                                    department: "Emergency Services",
+                                    priority: "urgent",
+                                    fileSize: "567 KB"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        title: "Financial Reports",
+                        key: "financial-reports",
+                        folder: true,
+                        children: [
+                            {
+                                title: "Monthly P&L Report - February 2024",
+                                key: "doc-008",
+                                extraClasses: "doc-report doc-approved",
+                                data: {
+                                    type: "report",
+                                    status: "approved",
+                                    version: "1.0",
+                                    author: "Financial Analyst",
+                                    created: "2024-03-01",
+                                    modified: "2024-03-03",
+                                    approver: "CFO",
+                                    department: "Finance",
+                                    priority: "high",
+                                    fileSize: "2.1 MB"
+                                }
+                            },
+                            {
+                                title: "Budget Variance Analysis Q1",
+                                key: "doc-009",
+                                extraClasses: "doc-report doc-review",
+                                data: {
+                                    type: "report",
+                                    status: "review",
+                                    version: "1.2",
+                                    author: "Budget Analyst",
+                                    created: "2024-03-28",
+                                    modified: "2024-04-01",
+                                    reviewer: "Finance Director",
+                                    department: "Finance",
+                                    priority: "high",
+                                    fileSize: "1.7 MB"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: "Policies & Procedures",
+                key: "policies",
+                folder: true,
+                extraClasses: "folder-icon",
+                children: [
+                    {
+                        title: "HR Policies",
+                        key: "policies-hr",
+                        folder: true,
+                        children: [
+                            {
+                                title: "Employee Handbook 2024",
+                                key: "doc-010",
+                                extraClasses: "doc-manual doc-approved",
+                                data: {
+                                    type: "manual",
+                                    status: "approved",
+                                    version: "5.1",
+                                    author: "HR Policy Team",
+                                    created: "2024-01-01",
+                                    modified: "2024-02-15",
+                                    approver: "HR Director",
+                                    department: "Human Resources",
+                                    priority: "normal",
+                                    fileSize: "4.8 MB"
+                                }
+                            },
+                            {
+                                title: "Remote Work Policy v3.0",
+                                key: "doc-011",
+                                extraClasses: "doc-policy doc-review",
+                                data: {
+                                    type: "policy",
+                                    status: "review",
+                                    version: "3.0",
+                                    author: "Policy Committee",
+                                    created: "2024-02-20",
+                                    modified: "2024-03-01",
+                                    reviewer: "Executive Team",
+                                    department: "Human Resources",
+                                    priority: "high",
+                                    fileSize: "1.3 MB"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        // Initialize Fancytree for Document Tracking
+        // Error handling
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            console.error('JavaScript Error:', msg, 'at line', lineNo);
+            document.getElementById('statusText').textContent = 'JavaScript Error - Check console';
+            return false;
+        };
+
+        $(document).ready(function() {
+            // Check if jQuery and Fancytree are loaded
+            if (typeof $ === 'undefined') {
+                document.getElementById('statusText').textContent = 'jQuery not loaded';
+                return;
+            }
+
+            if (typeof $.ui === 'undefined') {
+                document.getElementById('statusText').textContent = 'jQuery UI not loaded';
+                return;
+            }
+
+            if (typeof $.ui.fancytree === 'undefined') {
+                document.getElementById('statusText').textContent = 'Fancytree not loaded';
+                return;
+            }
+
+            try {
+                $("#tree").fancytree({
+                    extensions: ["filter"],
+                    source: documentTreeData,
+
+                    // Tree options
+                    checkbox: false,
+                    selectMode: 1,
+                    clickFolderMode: 2,
+
+                    // Filter extension options
+                    filter: {
+                        autoApply: true,
+                        autoExpand: true,
+                        counter: true,
+                        fuzzy: false,
+                        hideExpandedCounter: true,
+                        hideExpanders: false,
+                        highlight: true,
+                        leavesOnly: false,
+                        nodata: true,
+                        mode: "hide"
+                    },
+
+                // Event handlers
+                activate: function(event, data) {
+                    const node = data.node;
+                    updateBreadcrumb(node);
+                    displayDocumentDetails(node);
+                    updateStatus(`Selected: ${node.title}`);
+                },
+
+                expand: function(event, data) {
+                    updateStatus(`Expanded: ${data.node.title}`);
+                },
+
+                collapse: function(event, data) {
+                    updateStatus(`Collapsed: ${data.node.title}`);
+                },
+
+                renderNode: function(event, data) {
+                    const node = data.node;
+                    const $nodeSpan = $(node.span);
+
+                    // Add document type icons and status indicators
+                    if (node.extraClasses) {
+                        const classes = node.extraClasses.split(' ');
+                        classes.forEach(cls => {
+                            if (cls.startsWith('doc-') && !cls.includes('draft') && !cls.includes('review') && !cls.includes('approved') && !cls.includes('rejected') && !cls.includes('archived') && !cls.includes('urgent')) {
+                                $nodeSpan.find('.fancytree-title').addClass(cls);
+                            }
+                        });
+
+                        // Add status indicators
+                        if (node.data && node.data.status) {
+                            const status = node.data.status;
+                            let statusIcon = '';
+                            switch(status) {
+                                case 'draft': statusIcon = '✏️'; break;
+                                case 'review': statusIcon = '👁️'; break;
+                                case 'approved': statusIcon = '✅'; break;
+                                case 'rejected': statusIcon = '❌'; break;
+                                case 'urgent': statusIcon = '🚨'; break;
+                                case 'archived': statusIcon = '📦'; break;
+                            }
+                            if (statusIcon) {
+                                $nodeSpan.find('.fancytree-title').append(` <span style="margin-left: 5px;">${statusIcon}</span>`);
+                            }
+                        }
+
+                        // Add version info for documents
+                        if (node.data && node.data.version) {
+                            $nodeSpan.find('.fancytree-title').append(` <span style="font-size: 10px; color: #6c757d; margin-left: 5px;">(v${node.data.version})</span>`);
+                        }
+                    }
+                }
+            });
+
+                // Update document count
+                const tree = $("#tree").fancytree("getTree");
+                const totalDocs = countDocuments(tree.getRootNode());
+                $("#documentCount").text(`${totalDocs} documents loaded`);
+
+            } catch (error) {
+                console.error('Error initializing Fancytree:', error);
+                $("#statusText").text('Error loading document tree');
+            }
+
+            // Search functionality
+            $("#searchInput").on("input", function() {
+                const searchTerm = $(this).val();
+                const tree = $("#tree").fancytree("getTree");
+
+                if (searchTerm) {
+                    tree.filterNodes(function(node) {
+                        // Search in title, author, department, and document type
+                        const title = node.title.toLowerCase();
+                        const search = searchTerm.toLowerCase();
+                        let match = title.includes(search);
+
+                        if (node.data) {
+                            match = match ||
+                                   (node.data.author && node.data.author.toLowerCase().includes(search)) ||
+                                   (node.data.department && node.data.department.toLowerCase().includes(search)) ||
+                                   (node.data.type && node.data.type.toLowerCase().includes(search));
+                        }
+
+                        return match;
+                    });
+                    updateStatus(`Search: "${searchTerm}"`);
+                } else {
+                    tree.clearFilter();
+                    updateStatus("Search cleared");
+                }
+            });
+
+            // Filter buttons functionality
+            $('.filter-btn').on('click', function() {
+                $('.filter-btn').removeClass('active');
+                $(this).addClass('active');
+
+                const filterType = $(this).data('filter');
+                const tree = $("#tree").fancytree("getTree");
+
+                if (filterType === 'all') {
+                    tree.clearFilter();
+                    updateStatus("Showing all documents");
+                } else {
+                    tree.filterNodes(function(node) {
+                        if (!node.data || !node.data.status) return false;
+                        return node.data.status === filterType;
+                    });
+                    updateStatus(`Filtered by: ${filterType}`);
+                }
+            });
+        });
+
+        // Utility functions
+        function expandAll() {
+            $("#tree").fancytree("getTree").expandAll();
+            updateStatus("All folders expanded");
+        }
+
+        function collapseAll() {
+            $("#tree").fancytree("getTree").expandAll(false);
+            updateStatus("All folders collapsed");
+        }
+
+        function refreshDocuments() {
+            $("#tree").fancytree("getTree").reload(documentTreeData);
+            updateStatus("Document tree refreshed");
+        }
+
+        function showPendingApprovals() {
+            const tree = $("#tree").fancytree("getTree");
+            tree.filterNodes(function(node) {
+                return node.data && (node.data.status === 'review' || node.data.status === 'urgent');
+            });
+            updateStatus("Showing pending approvals");
+        }
+
+        function countDocuments(node) {
+            let count = 0;
+            node.visit(function(n) {
+                if (n.data && n.data.type) count++;
+            });
+            return count;
+        }
+
+        function updateBreadcrumb(node) {
+            const breadcrumbParts = [];
+            let currentNode = node;
+
+            while (currentNode && currentNode.parent) {
+                breadcrumbParts.unshift(currentNode.title);
+                currentNode = currentNode.parent;
+            }
+
+            breadcrumbParts.unshift("Document Repository");
+            $("#breadcrumb").html(breadcrumbParts.join(" > "));
+        }
+
+        function updateStatus(message) {
+            $("#statusText").text(message);
+        }
+
+        function displayDocumentDetails(node) {
+            const contentArea = $("#contentArea");
+
+            if (!node.data || !node.data.type) {
+                // Display folder information
+                let content = `
+                    <div class="document-details">
+                        <div class="doc-header">
+                            <div class="doc-title">📁 ${node.title}</div>
+                        </div>
+                        <p>This folder contains ${node.children ? node.children.length : 0} items.</p>
+                    </div>
+                `;
+                contentArea.html(content);
+                return;
+            }
+
+            const data = node.data;
+            const statusClass = `status-${data.status}`;
+
+            let content = `
+                <div class="document-details">
+                    <div class="doc-header">
+                        <div class="doc-title">${getDocumentIcon(data.type)} ${node.title}</div>
+                        <div class="status-badge ${statusClass}">${data.status}</div>
+                    </div>
+
+                    <div class="doc-metadata">
+                        <div class="metadata-item">
+                            <div class="metadata-label">Document Type</div>
+                            <div class="metadata-value">${capitalizeFirst(data.type)}</div>
+                        </div>
+                        <div class="metadata-item">
+                            <div class="metadata-label">Version</div>
+                            <div class="metadata-value">${data.version}</div>
+                        </div>
+                        <div class="metadata-item">
+                            <div class="metadata-label">Author</div>
+                            <div class="metadata-value">${data.author}</div>
+                        </div>
+                        <div class="metadata-item">
+                            <div class="metadata-label">Department</div>
+                            <div class="metadata-value">${data.department}</div>
+                        </div>
+                        <div class="metadata-item">
+                            <div class="metadata-label">Created Date</div>
+                            <div class="metadata-value">${formatDate(data.created)}</div>
+                        </div>
+                        <div class="metadata-item">
+                            <div class="metadata-label">Last Modified</div>
+                            <div class="metadata-value">${formatDate(data.modified)}</div>
+                        </div>
+                        <div class="metadata-item">
+                            <div class="metadata-label">File Size</div>
+                            <div class="metadata-value">${data.fileSize}</div>
+                        </div>
+                        <div class="metadata-item">
+                            <div class="metadata-label">Priority</div>
+                            <div class="metadata-value">${capitalizeFirst(data.priority)}</div>
+                        </div>
+            `;
+
+            // Add additional fields based on document type
+            if (data.approver) {
+                content += `
+                        <div class="metadata-item">
+                            <div class="metadata-label">Approver</div>
+                            <div class="metadata-value">${data.approver}</div>
+                        </div>
+                `;
+            }
+
+            if (data.reviewer) {
+                content += `
+                        <div class="metadata-item">
+                            <div class="metadata-label">Reviewer</div>
+                            <div class="metadata-value">${data.reviewer}</div>
+                        </div>
+                `;
+            }
+
+            if (data.expiryDate) {
+                content += `
+                        <div class="metadata-item">
+                            <div class="metadata-label">Expiry Date</div>
+                            <div class="metadata-value">${formatDate(data.expiryDate)}</div>
+                        </div>
+                `;
+            }
+
+            if (data.amount) {
+                content += `
+                        <div class="metadata-item">
+                            <div class="metadata-label">Amount</div>
+                            <div class="metadata-value">${data.amount}</div>
+                        </div>
+                `;
+            }
+
+            content += `
+                    </div>
+                </div>
+
+                <div class="version-history">
+                    <h4>📋 Version History</h4>
+                    ${generateVersionHistory(data)}
+                </div>
+
+                <div class="workflow-timeline">
+                    <h4>🔄 Workflow Timeline</h4>
+                    ${generateWorkflowTimeline(data)}
+                </div>
+            `;
+
+            contentArea.html(content);
+        }
+
+        function getDocumentIcon(type) {
+            const icons = {
+                'contract': '📄',
+                'invoice': '🧾',
+                'report': '📊',
+                'policy': '📋',
+                'manual': '📖',
+                'certificate': '🏆',
+                'legal': '⚖️',
+                'financial': '💰'
+            };
+            return icons[type] || '📄';
+        }
+
+        function capitalizeFirst(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function generateVersionHistory(data) {
+            // Mock version history based on current version
+            const currentVersion = parseFloat(data.version);
+            let history = '';
+
+            for (let i = currentVersion; i >= 1.0; i -= 0.1) {
+                const version = i.toFixed(1);
+                const isCurrentVersion = version === data.version;
+                const date = new Date(data.created);
+                date.setDate(date.getDate() - Math.floor((currentVersion - i) * 10));
+
+                history += `
+                    <div class="version-item">
+                        <div>
+                            <strong>v${version}</strong> ${isCurrentVersion ? '(Current)' : ''}
+                            <br><small>${formatDate(date.toISOString().split('T')[0])}</small>
+                        </div>
+                        <div>
+                            <button class="btn" style="font-size: 11px;">Download</button>
+                        </div>
+                    </div>
+                `;
+
+                if (i <= 1.0) break;
+            }
+
+            return history;
+        }
+
+        function generateWorkflowTimeline(data) {
+            const workflows = {
+                'draft': [
+                    { step: 'Document Created', status: 'completed', date: data.created },
+                    { step: 'Content Review', status: 'current', date: null },
+                    { step: 'Approval', status: 'pending', date: null },
+                    { step: 'Publication', status: 'pending', date: null }
+                ],
+                'review': [
+                    { step: 'Document Created', status: 'completed', date: data.created },
+                    { step: 'Content Review', status: 'current', date: data.modified },
+                    { step: 'Approval', status: 'pending', date: null },
+                    { step: 'Publication', status: 'pending', date: null }
+                ],
+                'approved': [
+                    { step: 'Document Created', status: 'completed', date: data.created },
+                    { step: 'Content Review', status: 'completed', date: data.modified },
+                    { step: 'Approval', status: 'completed', date: data.modified },
+                    { step: 'Publication', status: 'current', date: null }
+                ],
+                'urgent': [
+                    { step: 'Urgent Request', status: 'completed', date: data.created },
+                    { step: 'Emergency Review', status: 'current', date: data.modified },
+                    { step: 'Fast-track Approval', status: 'pending', date: null }
+                ]
+            };
+
+            const workflow = workflows[data.status] || workflows['draft'];
+            let timeline = '';
+
+            workflow.forEach(item => {
+                timeline += `
+                    <div class="timeline-item ${item.status}">
+                        <div>
+                            <strong>${item.step}</strong>
+                            ${item.date ? `<br><small>${formatDate(item.date)}</small>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            return timeline;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Test</title>
+    
+    <!-- Fancytree CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery.fancytree@2.38.3/dist/skin-win8/ui.fancytree.min.css">
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #tree {
+            height: 400px;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        .error {
+            color: red;
+            background: #ffe6e6;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Debug Test - Fancytree</h1>
+    <div id="error-log" class="error" style="display: none;"></div>
+    <div id="tree"></div>
+    <div id="status">Loading...</div>
+
+    <!-- jQuery and Fancytree JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.fancytree@2.38.3/dist/jquery.fancytree-all-deps.min.js"></script>
+    
+    <script>
+        // Error handling
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            const errorDiv = document.getElementById('error-log');
+            errorDiv.style.display = 'block';
+            errorDiv.innerHTML = `<strong>JavaScript Error:</strong><br>
+                Message: ${msg}<br>
+                Line: ${lineNo}<br>
+                Column: ${columnNo}<br>
+                Error: ${error}`;
+            return false;
+        };
+
+        // Simple test data
+        const testData = [
+            {
+                title: "Test Folder",
+                key: "folder1",
+                folder: true,
+                children: [
+                    {
+                        title: "Test Document",
+                        key: "doc1",
+                        data: {
+                            type: "contract",
+                            status: "approved"
+                        }
+                    }
+                ]
+            }
+        ];
+
+        $(document).ready(function() {
+            try {
+                $("#tree").fancytree({
+                    source: testData,
+                    activate: function(event, data) {
+                        $("#status").text("Selected: " + data.node.title);
+                    }
+                });
+                $("#status").text("Fancytree initialized successfully!");
+            } catch (error) {
+                const errorDiv = document.getElementById('error-log');
+                errorDiv.style.display = 'block';
+                errorDiv.innerHTML = `<strong>Initialization Error:</strong><br>${error.message}`;
+                $("#status").text("Error initializing Fancytree");
+            }
+        });
+    </script>
+</body>
+</html>
