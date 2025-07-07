@@ -231,47 +231,115 @@
         ];
 
         $(document).ready(function() {
-            // Initialize Fancytree
-            $("#tree").fancytree({
-                source: documentData,
-                
-                activate: function(event, data) {
-                    const node = data.node;
-                    displayDocumentInfo(node);
-                    $("#statusText").text("Selected: " + node.title);
-                },
-                
-                expand: function(event, data) {
-                    $("#statusText").text("Expanded: " + data.node.title);
-                }
-            });
-            
+            console.log("Document ready, initializing Fancytree...");
+            console.log("Document data:", documentData);
+
+            // Check if tree element exists
+            if ($("#tree").length === 0) {
+                console.error("Tree element not found!");
+                $("#statusText").text("Error: Tree element not found");
+                return;
+            }
+
+            try {
+                // Initialize Fancytree
+                $("#tree").fancytree({
+                    source: documentData,
+
+                    // Add initialization callback
+                    init: function(event, data) {
+                        console.log("Fancytree initialized successfully");
+                        $("#statusText").text("Document tree loaded");
+                        $("#documentCount").text(countDocuments() + " documents loaded");
+                    },
+
+                    activate: function(event, data) {
+                        const node = data.node;
+                        displayDocumentInfo(node);
+                        $("#statusText").text("Selected: " + node.title);
+                    },
+
+                    expand: function(event, data) {
+                        $("#statusText").text("Expanded: " + data.node.title);
+                    },
+
+                    // Add error handling
+                    loadError: function(event, data) {
+                        console.error("Fancytree load error:", data);
+                        $("#statusText").text("Error loading tree data");
+                    }
+                });
+
+                // Force initial expansion of first level
+                setTimeout(function() {
+                    const tree = $("#tree").fancytree("getTree");
+                    if (tree) {
+                        tree.getRootNode().visit(function(node) {
+                            if (node.getLevel() === 1) {
+                                node.setExpanded(true);
+                            }
+                        });
+                        console.log("Tree expanded");
+                    }
+                }, 100);
+
+            } catch (error) {
+                console.error("Error initializing Fancytree:", error);
+                $("#statusText").text("Initialization error: " + error.message);
+            }
+
             // Search functionality
             $("#searchInput").on("input", function() {
                 const searchTerm = $(this).val();
                 const tree = $("#tree").fancytree("getTree");
-                
-                if (searchTerm) {
+
+                if (tree && searchTerm) {
                     tree.filterNodes(searchTerm, { autoExpand: true });
-                } else {
+                    $("#statusText").text("Searching: " + searchTerm);
+                } else if (tree) {
                     tree.clearFilter();
+                    $("#statusText").text("Search cleared");
                 }
             });
-            
-            $("#documentCount").text("Document tree loaded successfully");
         });
 
+        function countDocuments() {
+            let count = 0;
+            function countInNode(node) {
+                if (node.data && node.data.type) {
+                    count++;
+                }
+                if (node.children) {
+                    node.children.forEach(countInNode);
+                }
+            }
+            documentData.forEach(countInNode);
+            return count;
+        }
+
         function expandAll() {
-            $("#tree").fancytree("getTree").expandAll();
+            const tree = $("#tree").fancytree("getTree");
+            if (tree) {
+                tree.expandAll();
+                $("#statusText").text("All folders expanded");
+            }
         }
 
         function collapseAll() {
-            $("#tree").fancytree("getTree").expandAll(false);
+            const tree = $("#tree").fancytree("getTree");
+            if (tree) {
+                tree.expandAll(false);
+                $("#statusText").text("All folders collapsed");
+            }
         }
 
         function refreshTree() {
-            $("#tree").fancytree("getTree").reload(documentData);
-            $("#statusText").text("Tree refreshed");
+            const tree = $("#tree").fancytree("getTree");
+            if (tree) {
+                tree.reload(documentData);
+                $("#statusText").text("Tree refreshed");
+                $("#documentCount").text(countDocuments() + " documents reloaded");
+            }
         }
 
         function displayDocumentInfo(node) {

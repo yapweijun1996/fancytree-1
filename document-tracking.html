@@ -700,6 +700,8 @@
             }
 
             try {
+                console.log("Initializing Fancytree with data:", documentTreeData);
+
                 $("#tree").fancytree({
                     extensions: ["filter"],
                     source: documentTreeData,
@@ -721,6 +723,24 @@
                         leavesOnly: false,
                         nodata: true,
                         mode: "hide"
+                    },
+
+                    // Add initialization callback
+                    init: function(event, data) {
+                        console.log("Fancytree initialized successfully");
+                        updateStatus("Document tree loaded successfully");
+                        const tree = $("#tree").fancytree("getTree");
+                        const totalDocs = countDocuments(tree.getRootNode());
+                        $("#documentCount").text(`${totalDocs} documents loaded`);
+
+                        // Auto-expand first level
+                        setTimeout(function() {
+                            tree.getRootNode().visit(function(node) {
+                                if (node.getLevel() === 1) {
+                                    node.setExpanded(true);
+                                }
+                            });
+                        }, 100);
                     },
 
                 // Event handlers
